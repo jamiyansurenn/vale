@@ -19,8 +19,22 @@ const App = () => {
   const [noPos, setNoPos] = useState({ x: 0, y: 0 });
   const [accepted, setAccepted] = useState(false);
   const [loveMeter, setLoveMeter] = useState(12);
+  const [lastYesAt, setLastYesAt] = useState(null);
+  const [yesCount, setYesCount] = useState(null);
 
   const hearts = useMemo(() => createHearts(14), []);
+  const firebaseEnabled =
+    window.firebaseConfig &&
+    window.firebaseConfig.apiKey &&
+    !window.firebaseConfig.apiKey.includes("PASTE");
+
+  const getDatabase = () => {
+    if (!firebaseEnabled || !window.firebase) return null;
+    if (!window.firebase.apps.length) {
+      window.firebase.initializeApp(window.firebaseConfig);
+    }
+    return window.firebase.database();
+  };
 
   const moveNoButton = () => {
     const playground = playgroundRef.current;
@@ -49,11 +63,43 @@ const App = () => {
     setLoveMeter((prev) => clamp(prev + 7, 12, 100));
   };
 
+  const handleYes = () => {
+    setAccepted(true);
+    const db = getDatabase();
+    if (!db) return;
+    const now = new Date().toISOString();
+    db.ref("valentine/lastYes").set(now);
+    db.ref("valentine/yesCount").transaction((count) => (count || 0) + 1);
+    db.ref("valentine/responses").push({
+      at: now,
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      ua: navigator.userAgent || "",
+    });
+  };
+
   useEffect(() => {
     const handleResize = () => moveNoButton();
     moveNoButton();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const db = getDatabase();
+    if (!db) return undefined;
+
+    const lastYesRef = db.ref("valentine/lastYes");
+    const countRef = db.ref("valentine/yesCount");
+
+    lastYesRef.on("value", (snapshot) => setLastYesAt(snapshot.val() || null));
+    countRef.on("value", (snapshot) =>
+      setYesCount(typeof snapshot.val() === "number" ? snapshot.val() : null)
+    );
+
+    return () => {
+      lastYesRef.off();
+      countRef.off();
+    };
   }, []);
 
   return (
@@ -96,7 +142,7 @@ const App = () => {
                 type="button"
                 style={{ transform: `scale(${yesScale})` }}
                 disabled={accepted}
-                onClick={() => setAccepted(true)}
+                onClick={handleYes}
               >
                 Yes
               </button>
@@ -116,6 +162,18 @@ const App = () => {
             <p className="result" role="status">
               {accepted ? "Yay! Болзъё, Валентайн 💖" : "Үгүй товчийг барьж чадах уу?"}
             </p>
+            {firebaseEnabled && (
+              <div className="live-status">
+                <p className="status-title">Live status</p>
+                <p className="status-line">
+                  Сүүлд “Тийм” дарсан:{" "}
+                  {lastYesAt ? new Date(lastYesAt).toLocaleString() : "одоо алга"}
+                </p>
+                {yesCount !== null && (
+                  <p className="status-line">Нийт “Тийм”: {yesCount}</p>
+                )}
+              </div>
+            )}
             {accepted && (
               <div className="celebrate">
                 <span>🎉 Чи “тийм” гэж хэллээ!</span>
