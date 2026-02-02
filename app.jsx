@@ -1,6 +1,4 @@
-const { useEffect, useMemo, useRef, useState } = React;
-
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const { useMemo, useState } = React;
 
 const createHearts = (count = 12) =>
   Array.from({ length: count }, (_, index) => ({
@@ -12,49 +10,10 @@ const createHearts = (count = 12) =>
   }));
 
 const App = () => {
-  const playgroundRef = useRef(null);
-  const noBtnRef = useRef(null);
-
-  const [yesScale, setYesScale] = useState(1);
-  const [noPos, setNoPos] = useState({ x: 0, y: 0 });
   const [accepted, setAccepted] = useState(false);
   const [loveMeter, setLoveMeter] = useState(12);
 
   const hearts = useMemo(() => createHearts(14), []);
-
-  const moveNoButton = () => {
-    const playground = playgroundRef.current;
-    const noBtn = noBtnRef.current;
-    if (!playground || !noBtn) return;
-
-    const maxX = playground.clientWidth - noBtn.offsetWidth;
-    const maxY = playground.clientHeight - noBtn.offsetHeight;
-
-    const nextX = Math.random() * maxX;
-    const nextY = Math.random() * maxY;
-
-    setNoPos({
-      x: clamp(nextX, 0, maxX),
-      y: clamp(nextY, 0, maxY),
-    });
-  };
-
-  const growYes = (amount = 0.06) => {
-    setYesScale((prev) => clamp(prev + amount, 1, 2.4));
-  };
-
-  const tease = (amount) => {
-    moveNoButton();
-    growYes(amount);
-    setLoveMeter((prev) => clamp(prev + 7, 12, 100));
-  };
-
-  useEffect(() => {
-    const handleResize = () => moveNoButton();
-    moveNoButton();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   return (
     <main className="page">
@@ -81,54 +40,48 @@ const App = () => {
             💘
           </p>
           <div>
-            <h1>Will you be my Valentine?</h1>
-            <p className="subtitle">Just say yes, please.</p>
+            <h1>Чи миний Валентайн болох уу?</h1>
+            <p className="subtitle">Зүгээр л “тийм” гэж хэлээрэй.</p>
           </div>
         </header>
 
-        <div className="sections">
+        <div className={`sections ${accepted ? "is-grid" : "is-single"}`}>
           <div className="section">
-            <p className="section-title">Say yes here</p>
-            <div className="playground" ref={playgroundRef}>
+            <p className="section-title">Тийм гэж хэлээрэй</p>
+            <div className="playground">
               <button
                 className="btn yes"
                 type="button"
-                style={{ transform: `scale(${yesScale})` }}
                 disabled={accepted}
-                onMouseEnter={() => growYes(0.03)}
                 onClick={() => setAccepted(true)}
               >
                 Yes
               </button>
               <button
                 className="btn no"
-                ref={noBtnRef}
                 type="button"
                 disabled={accepted}
-                style={{ left: `${noPos.x}px`, top: `${noPos.y}px` }}
-                onMouseEnter={() => tease(0.08)}
-                onClick={() => tease(0.1)}
               >
                 No
               </button>
             </div>
             <p className="result" role="status">
-              {accepted ? "Yay! See you, Valentine 💖" : "Catch the No button if you can."}
+              {accepted ? "Yay! Болзъё, Валентайн 💖" : "Үгүй товчийг барьж чадах уу?"}
             </p>
             {accepted && (
               <div className="celebrate">
-                <span>🎉 You said yes!</span>
-                <span>💌 Check the surprises on the right</span>
+                <span>🎉 Чи “тийм” гэж хэллээ!</span>
+                <span>💌 Баруун талын сюрпризүүдийг хараарай</span>
               </div>
             )}
             {accepted && (
               <div className="yes-plan">
-                <p className="plan-title">What happens next</p>
+                <p className="plan-title">Дараа нь юу болох вэ</p>
                 <ul className="plan-list">
-                  <li>📞 I call you and say: “See you at 6?”</li>
-                  <li>🌹 I bring flowers + a little gift</li>
-                  <li>🍰 We grab sweets and take cute photos</li>
-                  <li>🚶‍♀️ We end with a night walk and a smooch</li>
+                  <li>📞 Би залгаад “6 цагт уулзъя юу?”</li>
+                  <li>🌹 Цэцэг + жижигхэн бэлэг</li>
+                  <li>🍰 Амттан авч гоё зураг дарна</li>
+                  <li>🚶‍♀️ Орой алхалт + смүүч 💋</li>
                 </ul>
                 <div className="smooch" aria-label="smooch">
                   Mua 💋
@@ -137,15 +90,15 @@ const App = () => {
             )}
           </div>
 
-          {accepted ? (
+          {accepted && (
             <>
               <div className="section reveal">
-                <p className="section-title">Cute features</p>
+                <p className="section-title">Хөөрхөн фичерууд</p>
                 <ul className="feature-list">
-                  <li>Floating hearts background</li>
-                  <li>Love meter rises when No runs</li>
-                  <li>Yes button grows with each try</li>
-                  <li>Soft gradient, pastel theme</li>
+                  <li>Хөвөгч зүрхнүүд</li>
+                  <li>Үгүй зугтах тусам love meter өснө</li>
+                  <li>Тийм товч томорно</li>
+                  <li>Зөөлөн пастел өнгө</li>
                 </ul>
                 <div className="meter">
                   <div className="meter-label">Love meter</div>
@@ -156,27 +109,20 @@ const App = () => {
               </div>
 
               <div className="section reveal">
-                <p className="section-title">Reasons to say yes</p>
+                <p className="section-title">“Тийм” гэх шалтгаанууд</p>
                 <div className="chips">
-                  <span>✨ Cute date</span>
-                  <span>🍓 Sweet treats</span>
-                  <span>🎶 Cozy playlist</span>
-                  <span>📸 Lovely photos</span>
-                  <span>🫶 Lots of hugs</span>
-                  <span>🌙 Night walk</span>
+                  <span>✨ Хөөрхөн болзоо</span>
+                  <span>🍓 Амттан</span>
+                  <span>🎶 Дуут плейлист</span>
+                  <span>📸 Гоё зураг</span>
+                  <span>🫶 Тэврэлт</span>
+                  <span>🌙 Орой алхалт</span>
                 </div>
                 <p className="note">
-                  You can customize these lines for your crush.
+                  Эдгээрийг хүссэнээрээ өөрчилж болно.
                 </p>
               </div>
             </>
-          ) : (
-            <div className="section tease">
-              <p className="section-title">Secret area</p>
-              <p className="note">
-                Say yes to unlock cute features and reasons.
-              </p>
-            </div>
           )}
         </div>
       </section>
