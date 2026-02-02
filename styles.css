@@ -237,6 +237,24 @@ h1 {
   color: #7a1d43;
 }
 
+.variant-main {
+  margin: 8px 0 6px;
+  font-weight: 600;
+  color: #5a1934;
+}
+
+.variant-sub {
+  margin: 0 0 10px;
+  color: #7a1d43;
+  font-size: 14px;
+}
+
+.variant-block {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #ffd0e4;
+}
+
 .floating-hearts {
   position: fixed;
   inset: 0;
