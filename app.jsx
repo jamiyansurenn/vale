@@ -1,4 +1,6 @@
-const { useMemo, useState } = React;
+const { useEffect, useMemo, useRef, useState } = React;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const createHearts = (count = 12) =>
   Array.from({ length: count }, (_, index) => ({
@@ -10,10 +12,49 @@ const createHearts = (count = 12) =>
   }));
 
 const App = () => {
+  const playgroundRef = useRef(null);
+  const noBtnRef = useRef(null);
+
+  const [yesScale, setYesScale] = useState(1.1);
+  const [noPos, setNoPos] = useState({ x: 0, y: 0 });
   const [accepted, setAccepted] = useState(false);
   const [loveMeter, setLoveMeter] = useState(12);
 
   const hearts = useMemo(() => createHearts(14), []);
+
+  const moveNoButton = () => {
+    const playground = playgroundRef.current;
+    const noBtn = noBtnRef.current;
+    if (!playground || !noBtn) return;
+
+    const maxX = playground.clientWidth - noBtn.offsetWidth;
+    const maxY = playground.clientHeight - noBtn.offsetHeight;
+
+    const nextX = Math.random() * maxX;
+    const nextY = Math.random() * maxY;
+
+    setNoPos({
+      x: clamp(nextX, 0, maxX),
+      y: clamp(nextY, 0, maxY),
+    });
+  };
+
+  const growYes = (amount = 0.06) => {
+    setYesScale((prev) => clamp(prev + amount, 1, 2.4));
+  };
+
+  const tease = (amount) => {
+    moveNoButton();
+    growYes(amount);
+    setLoveMeter((prev) => clamp(prev + 7, 12, 100));
+  };
+
+  useEffect(() => {
+    const handleResize = () => moveNoButton();
+    moveNoButton();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <main className="page">
@@ -48,10 +89,11 @@ const App = () => {
         <div className={`sections ${accepted ? "is-grid" : "is-single"}`}>
           <div className="section">
             <p className="section-title">Тийм гэж хэлээрэй</p>
-            <div className="playground">
+            <div className="playground" ref={playgroundRef}>
               <button
                 className="btn yes"
                 type="button"
+                style={{ transform: `scale(${yesScale})` }}
                 disabled={accepted}
                 onClick={() => setAccepted(true)}
               >
@@ -59,8 +101,12 @@ const App = () => {
               </button>
               <button
                 className="btn no"
+                ref={noBtnRef}
                 type="button"
                 disabled={accepted}
+                style={{ left: `${noPos.x}px`, top: `${noPos.y}px` }}
+                onMouseEnter={() => tease(0.08)}
+                onClick={() => tease(0.1)}
               >
                 No
               </button>
